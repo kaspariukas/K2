@@ -1,0 +1,183 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+using System.Dynamic;
+using System.Linq;
+using System.Reflection;
+
+namespace OP_KD2_pasiruosimas
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.InputEncoding = Console.OutputEncoding = Encoding.GetEncoding(1257);
+            const string fin = "Tekstas.txt";
+            const string fout = "RedTesktas.txt";
+            string Vowels = "AEĖIYOUŪ";
+            string punctuation = " .,!?:;()\t";
+
+
+            TaskUtils.PreformTask(fin, fout);
+        }
+    }
+    static class TaskUtils
+    {
+        public static bool NoDigits(string line)
+        {
+            foreach (char c in line) 
+            {
+                if(c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9' || c == '0') 
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public static void PreformTask(string fd, string fr)
+        {
+            using (var writer = File.CreateText(fr))
+            {
+                using (StreamReader reader = new StreamReader(new FileStream(fd, FileMode.Open))) 
+                {
+                    string line;
+                    string punctuation = reader.ReadLine();
+                    char[] punc = punctuation.ToCharArray();
+                    string Vowels = "AEĖIYOUŪ";
+                    List<string> WordsNoDigits = new List<string>();
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        string word = FindWord1Line(line, punctuation, Vowels);
+
+                        string lastWordNoDigits = FindWord2Line(line, punctuation);
+                        if(lastWordNoDigits != "")
+                        {
+                            int index = lastWordNoDigits.IndexOfAny(punc);
+                            if(index != -1)
+                            lastWordNoDigits = lastWordNoDigits.Substring(0, index);
+                            WordsNoDigits.Add(lastWordNoDigits);
+                        }
+                        if (word != "")
+                        {
+                            line = EditLine(line, punctuation, word);
+                        }
+                        writer.WriteLine(line);
+                    }
+                    foreach(string word in WordsNoDigits)
+                    {
+                        writer.WriteLine(word);
+                    }
+                }
+            }
+        }
+        public static int NumberDiffrentVowelsInLine(string line, string Vowels)
+        {
+            int[] frequency = new int[Vowels.Length];
+            int count = 0;
+            foreach(char c in line)
+            {
+                int index = Vowels.IndexOf(Char.ToUpper(c));
+                if(index >= 0)
+                {
+                    frequency[index]++;
+                    if (frequency[index] == 1)
+                        count++;
+                }
+            }
+            return count;
+        }
+        public static string FindWord1Line(string line, string punctuation, string Vowels)
+        {
+            char[] punc = punctuation.ToCharArray();
+            string[] Words = line.Split(punc, StringSplitOptions.RemoveEmptyEntries);
+            string MaxLength = "";
+
+            foreach (string word in Words) 
+            {
+                if(NumberDiffrentVowelsInLine(word, Vowels) == 3 && MaxLength.Length <= word.Length)
+                {
+                    MaxLength = word;
+                }
+            }
+            if(MaxLength.Length > 0)
+            {
+                int index = line.IndexOf(MaxLength) + MaxLength.Length - 1;
+                bool otherWord = false;
+                for(int i = index; i < line.Length && !otherWord; i++) 
+                {
+                    if(i != index)
+                    {
+                        if (punctuation.IndexOf(line[i]) >= 0)
+                        { 
+                            MaxLength += line[i];
+                        }
+                        else
+                            otherWord = true;
+                    }
+                }
+            }
+            return MaxLength;
+        }
+        public static string EditLine(string line, string punctuation, string word) 
+        {
+            char[] punc = punctuation.ToCharArray();
+            string[] Words = line.Split(punc, StringSplitOptions.RemoveEmptyEntries);
+            string newLine = "";
+            int wordIndex = line.IndexOf(word);
+            if (wordIndex > 0)
+            {
+                newLine = word;
+                bool otherWord = false;
+                int index = wordIndex + word.Length - 1, punctuationsAdded = 0;
+                for (int i = index ; i < line.Length && !otherWord; i++)
+                {
+                    if (i != index)
+                    {
+                        if (punctuation.IndexOf(line[i]) >= 0)
+                        {
+                            punctuationsAdded++;
+                            newLine += line[i];
+                        }
+                        else
+                            otherWord = true;
+                    }
+                }
+                newLine += line.Substring(0, wordIndex);
+                newLine += line.Substring(wordIndex + word.Length + punctuationsAdded);
+            }
+            return newLine;
+        }
+        public static string FindWord2Line(string line, string punctuation)
+        {
+            char[] punc = punctuation.ToCharArray();
+            string[] Words = line.Split(punc, StringSplitOptions.RemoveEmptyEntries);
+
+            string MaxLengthNoDigits = "";
+            foreach(string word in Words) 
+            {
+                if(NoDigits(word))
+                {
+                        MaxLengthNoDigits = word;
+                }
+            }
+            int index = line.IndexOf(MaxLengthNoDigits) + MaxLengthNoDigits.Length - 1;
+            bool otherWord = false;
+            for (int i = index; i < line.Length && !otherWord; i++)
+            {
+                if (i != index)
+                {
+                    if (punctuation.IndexOf(line[i]) >= 0)
+                    {
+                        MaxLengthNoDigits += line[i];
+                    }
+                    else
+                        otherWord = true;
+                }
+            }
+            return MaxLengthNoDigits;
+        }
+    }
+
+}
